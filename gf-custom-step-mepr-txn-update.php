@@ -6,8 +6,8 @@
  * Company: MemberFix
  * URL: https://memberfix.rocks
  * Author: Denys Melnychuk
- * Date: 15.05.2024
- * Version: 1.0
+ * Date: 23.05.2024
+ * Version: 1.1
  */
 
 // Wait until Gravity Flow is ready before declaring the step class.
@@ -41,6 +41,13 @@ add_action('gravityflow_loaded', function() {
                         'label'      => 'Email field',         // Label of the field
                         'type'       => 'text',
                     ),
+		array(
+                        'name'       => 'membership_term',
+                        'class'      => 'merge-tag-support',
+                        'required'   => false,
+                        'label'      => 'Membership term',
+                        'type'       => 'text',
+                    ),
                     array(
                         'name'       => 'entry_timeline_note',
                         'class'      => 'merge-tag-support',
@@ -58,15 +65,19 @@ add_action('gravityflow_loaded', function() {
 
             // Get settings values
             $email_field = $this->get_setting('email_field');
+	    $membership_term = $this->get_setting('membership_term');
             $entry_timeline_note = $this->get_setting('entry_timeline_note');
 
             // Replace merge tags in the settings values
             $email_field = GFCommon::replace_variables($email_field, $this->get_form(), $entry, false, false, false, 'text');
+	    $membership_term = GFCommon::replace_variables($membership_term, $this->get_form(), $entry, false, false, false, 'text');
             $entry_timeline_note = GFCommon::replace_variables($entry_timeline_note, $this->get_form(), $entry, false, false, false, 'text');
 
             // Format the created_at date
             $date = new DateTime();
             $formatted_date = $date->format('Y-m-d H:i:s');
+	    $date->modify("+" . $membership_term);
+	    $expiry_formatted_date = $date->format('Y-m-d 23:59:59');
 
             // Find user by email field
             $user = get_user_by('email', $email_field);
@@ -86,11 +97,16 @@ add_action('gravityflow_loaded', function() {
                             $txn->status = MeprTransaction::$complete_str; // Update the status if needed
                             $txn->created_at = $formatted_date; // Update the creation date if needed
                             // Save the updated transaction
-                            $txn->store();
-							
-							//log txn
-							error_log (print_r($txn, true));
-							
+
+			if ($txn->product_id === '25790') {		////Membership ID for SDO
+                                $txn->expires_at = '2100-01-01 23:59:59';  
+                            }
+                            else {
+                                $txn->expires_at = $expiry_formatted_date; ///assuming this is not SDO membership, so need to use "membership term field"
+                            }	       
+				       
+                            $txn->store();	
+						
 							
                         } else {
                             // Handle the case where the transaction does not exist
