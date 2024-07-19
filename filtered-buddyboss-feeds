@@ -1,0 +1,27 @@
+<?php
+/**
+ * Filtered BuddyBoss Feeds
+ *
+ * Company: MemberFix
+ * URL: https://memberfix.rocks
+ * Author: Edgar Yepremyan
+ * Date: 7.19.2024
+ * Version: 1.0
+ */
+
+function filter_buddyboss_activity($query_args) {
+    // Define the activity types you want to include
+    $included_types = array(
+        'bbp_reply_create',    // BBPress reply
+        'bbp_topic_create',    // BBPress topic
+        // Add other activity types related to discussions if needed
+    );
+
+    // Modify the query to include only the specified activity types
+    $query_args['action'] = $included_types;
+
+    return $query_args;
+}
+
+// Hook the function to the BuddyBoss activity query
+add_filter('bp_after_has_activities_parse_args', 'filter_buddyboss_activity');
