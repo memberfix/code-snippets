@@ -1,0 +1,36 @@
+<?php
+/**
+ * LearnDash Access Control: show/hide courses based on user role.
+ *
+ * Company: MemberFix
+ * URL: https://memberfix.rocks
+ * Author: Edgar Yepremyan
+ * Date: 7.19.2024
+ * Version: 1.0
+ */
+
+/*below you will find a code that will let you remove access for any course for BSP users, just need to take course ID*/
+
+function remove_bsp_user_course_access() {
+    // The role we target
+    $role = 'bsp_user';
+    
+    // course ID 
+    $course_id = 46228; 
+
+    // Fetch all users with the 'bsp_user' role
+    $bsp_users = get_users(array(
+        'role' => $role
+    ));
+
+    // loop through each user and remove their course access
+    foreach ($bsp_users as $user) {
+        ld_update_course_access($user->ID, $course_id, true);
+    }
+}
+
+remove_bsp_user_course_access(); 
+
+/* end of the code for updating access for bsp users */
+
+
