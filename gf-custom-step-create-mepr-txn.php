@@ -9,7 +9,7 @@
  * Company: MemberFix 
  * URL: https://memberfix.rocks
  * Author: Denys Melnychuk
- * Date: 27.05.2025
+ * Date: 28.05.2025
  * Version: 1.3
  */
 
@@ -112,36 +112,45 @@ add_action( 'gravityflow_loaded', function() {
             error_log( 'Form ID: ' . $form_id);
 
             $rules = array(
-                // Structure: form_id => [membership_id => [date_format, uses_expiration_date]]
+                // Structure: form_id => [membership_id => [date_format, membership_term_required]]
                 
                 // Renewal Form
                 17 => array(
-                    25842 => array('m/d/Y', true),  // Associate
-                    25794 => array('m/d/Y', true),  // Breeder Dual
-                    25786 => array('m/d/Y', true),  // Breeder Single
-                    25790 => array('m/d/Y', true),  // Smart Dog Owner
+                    25842 => array('m/d/Y', false),  // Associate
+                    25794 => array('m/d/Y', false),  // Breeder Dual
+                    25786 => array('m/d/Y', false),  // Breeder Single
+                    25790 => array('m/d/Y', false),  // Smart Dog Owner
                 ),
                 
                 // Upgrade/Downgrade Form
                 23 => array(
-                    25842 => array('d-m-Y', false),   // Associate
-                    25794 => array('d-m-Y', false),   // Breeder Dual
-                    25786 => array('d-m-Y', false),   // Breeder Single
-                    25790 => array('d-m-Y', true),  // Smart Dog Owner - special case
+                    25842 => array('m-d-Y', true),   // Associate
+                    25794 => array('m-d-Y', true),   // Breeder Dual
+                    25786 => array('m-d-Y', true),   // Breeder Single
                 ),
                 
                 // Associate + Breeders Registration Form
                 4 => array(
-                    25842 => array('d-m-Y', true),  // Associate
-                    25794 => array('d-m-Y', true),  // Breeder Dual
-                    25786 => array('d-m-Y', true),  // Breeder Single
+                    25842 => array('m-d-Y', false),  // Associate
+                    25794 => array('m-d-Y', false),  // Breeder Dual
+                    25786 => array('m-d-Y', false),  // Breeder Single
                 ),
                 
                 // Smart Dog Owner Registration Form
                 20 => array(
-                    25790 => array('d-m-Y', true),  // Smart Dog Owner
+                    25790 => array('m-d-Y', false),  // Smart Dog Owner
                 ),
             );
+
+            if ($form_id == 23) { // Exclude Smart Dog Owner
+                $now = new DateTime();
+                $six_years_future = (clone $now)->modify('+6 years');
+                $expiration_date_object = DateTime::createFromFormat('Y-m-d H:i:s', $expiration_date);
+                if ($expiration_date_object < $now || $expiration_date_object > $six_years_future) {
+                    // Update $rules for form_id 23
+                    $rules[23][$membership_id] = array('m-d-Y', false);
+                }
+            }
 
             // Validate form and membership combination
             if (!isset($rules[$form_id]) || !isset($rules[$form_id][$membership_id])) {
@@ -150,7 +159,7 @@ add_action( 'gravityflow_loaded', function() {
             }
 
             $date_format = $rules[$form_id][$membership_id][0];
-            $uses_expiration_date = $rules[$form_id][$membership_id][1];
+            $add_membership_term = $rules[$form_id][$membership_id][1];
 
             // Parse start date
             $start_date_object = DateTime::createFromFormat($date_format, $start_date);
@@ -163,7 +172,7 @@ add_action( 'gravityflow_loaded', function() {
             error_log('Start Date: ' . $start_date);
 
             // Handle expiration date
-            if ($uses_expiration_date) {
+            if ($add_membership_term) {
                 if (empty($expiration_date)) {
                     error_log('Expiration date required but not provided');
                     return false;
